@@ -8,7 +8,7 @@ defmodule Bomberman.Application do
   def start(_type, _args) do
     children = [
       # Start the Ecto repository
-      Bomberman.Repo,
+      # Bomberman.Repo,
       # Start the Telemetry supervisor
       BombermanWeb.Telemetry,
       # Start the PubSub system

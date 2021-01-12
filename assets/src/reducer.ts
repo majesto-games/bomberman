@@ -1,73 +1,87 @@
+import { exhaustSwitchCase } from "./utils";
+
 export interface Action {
   type: string;
   payload: any;
 }
-export interface JoinAction {
+export interface JoinAction extends Action {
   type: "join";
   payload: {
-    username: string;
+    id: string;
+    players: Player[];
   }
 }
-export interface JoinedAction {
+export interface JoinedAction extends Action {
   type: "joined";
   payload: {
-    users: User[];
+    player: Player;
   }
 }
-export interface MoveAction {
+export interface LeftAction extends Action {
+  type: "left";
+  payload: {
+    player_id: string;
+  }
+}
+export interface MoveAction extends Action {
   type: "move";
   payload: {
-    username: string;
+    id: string;
     x: number;
     y: number;
   }
 }
 
-export type AllActions = JoinAction | MoveAction | JoinedAction
+export type AllActions = JoinAction | MoveAction | JoinedAction | LeftAction
 
-export interface User {
-  username: string;
+export interface Player {
+  id: string;
   x: number;
   y: number;
 }
 
 export interface State {
-  username: string | null;
-  users: User[]
+  id: string | null;
+  players: Player[]
 }
 
 export const initialState: State = {
-  username: null,
-  users: []
+  id: null,
+  players: []
 };
 
 export function reducer(state: State, action: AllActions): State {
   switch (action.type) {
     case "join": {
-      const { username } = action.payload;
       return {
         ...state,
-        username,
+        ...action.payload,
       }}
     case "move": {
-      const { username, x, y } = action.payload;
+      const { id, x, y } = action.payload;
       return {
         ...state,
-        users: state.users.map((user) => {
-          if (user.username === username) {
-            return { ...user, x, y }
+        players: state.players.map((p) => {
+          if (p.id === id) {
+            return { ...p, x, y }
           }
 
-          return user;
+          return p;
         }),
       }}
     case "joined": {
-      const { users } = action.payload;
+      const { player } = action.payload;
       return {
         ...state,
-        users
+        players: [...state.players, player]
+      }}
+    case "left": {
+      const { player_id } = action.payload;
+      return {
+        ...state,
+        players: state.players.filter((p) => p.id !== player_id)
       }}
     default:
-      throw new Error();
+      return exhaustSwitchCase(action, state)
   }
 }

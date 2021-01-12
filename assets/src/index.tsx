@@ -1,23 +1,33 @@
 import * as PIXI from "pixi.js";
 import { render } from "react-dom";
-import { Sprite, Stage, Text, Graphics, usePixiApp } from "react-pixi-fiber";
+import { Sprite, Stage, Text, Container, usePixiApp } from "react-pixi-fiber";
 import bunny from "./bunny.png";
 import { Socket } from "phoenix";
 import { useEffect, useReducer } from "react";
-import { initialState, reducer } from "./reducer";
+import { initialState, Player, reducer } from "./reducer";
 import { keyboard } from "./keyboard";
+
+import "./index.css";
 
 const socket = new Socket("ws://localhost:4000/socket");
 socket.connect();
 
-function Bunny(props: any) {
+const GRID_STEP = 40;
+
+interface BunnyProps extends Player {}
+
+const Bunny: React.FC<BunnyProps> = ({ id, x, y }) => {
   return (
-    <Graphics x={props.x} y={props.y}>
-      <Text text={props.username} />
-      <Sprite texture={PIXI.Texture.from(bunny)} />
-    </Graphics>
+    <Container x={x * GRID_STEP + 20} y={y * GRID_STEP + 20}>
+      <Text
+        text={id}
+        style={{ fontSize: 14, align: "center", fill: "#fff" }}
+        anchor={[0.5, 3]}
+      />
+      <Sprite texture={PIXI.Texture.from(bunny)} anchor={0.5} />
+    </Container>
   );
-}
+};
 
 const pressedKeys = keyboard();
 
@@ -56,25 +66,37 @@ const Main: React.FC<MainProps> = () => {
     channel.on("moved", (payload) => {
       dispatch({ type: "move", payload });
     });
+
+    channel.on("joined", (payload) => {
+      dispatch({ type: "joined", payload });
+    });
+
+    channel.on("left", (payload) => {
+      dispatch({ type: "left", payload });
+    });
   }, [ticker]);
 
   return (
     <>
-      {state.users.map((user) => (
-        <Bunny
-          key={user.username}
-          username={user.username}
-          x={user.x}
-          y={user.y}
-        />
+      {state.players.map((user) => (
+        <Bunny key={user.id} id={user.id} x={user.x} y={user.y} />
       ))}
     </>
   );
 };
 
 render(
-  <Stage options={{ backgroundColor: 0x10bb99, height: 600, width: 800 }}>
-    <Main />
-  </Stage>,
+  <>
+    <h1>Bomberman</h1>
+    <Stage
+      options={{
+        backgroundColor: 0x00,
+        height: 800,
+        width: 800,
+      }}
+    >
+      <Main />
+    </Stage>
+  </>,
   document.getElementById("root")
 );

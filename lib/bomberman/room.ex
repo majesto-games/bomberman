@@ -51,12 +51,33 @@ defmodule Bomberman.Room do
     |> update_player()
   end
 
+  def place_bomb(player_id, callback) do
+    player_id
+    |> get_player()
+    |> start_bomb_timer(callback)
+  end
+
+  @spec explode(integer, integer, ([Player.t()] -> any)) :: any
+  def explode(x, y, callback) do
+    IO.puts("Bomb placed #{x} #{y}")
+    Process.sleep(2000)
+    IO.puts("Bomb exploded")
+
+    callback.(get_players() |> Enum.filter(fn player -> x == player.x && y == player.y end))
+  end
+
   defp new_position(player, delta) do
     %Player{
       player
       | x: bounded_increment(player.x + delta.x),
         y: bounded_increment(player.y + delta.y)
     }
+  end
+
+  defp start_bomb_timer(%Player{x: x, y: y}, callback) do
+    Task.start(__MODULE__, :explode, [x, y, callback])
+
+    true
   end
 
   defp bounded_increment(value) when value < 0, do: 0

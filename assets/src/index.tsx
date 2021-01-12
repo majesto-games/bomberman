@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
 import { render } from "react-dom";
 import { Sprite, Stage, Text, Container, usePixiApp } from "react-pixi-fiber";
-import bunny from "./bunny.png";
 import { Socket } from "phoenix";
 import { useEffect, useReducer } from "react";
-import { initialState, Player, reducer } from "./reducer";
+import { Bomb as IBomb, initialState, Player, reducer } from "./reducer";
 import { keyboard } from "./keyboard";
+
+import bunny from "./bunny.png";
+import bomb from "./bomb.png";
 
 import "./index.css";
 
@@ -26,6 +28,19 @@ const Bunny: React.FC<BunnyProps> = ({ id, x, y }) => {
       />
       <Sprite texture={PIXI.Texture.from(bunny)} anchor={0.5} />
     </Container>
+  );
+};
+
+interface BombProps extends IBomb {}
+
+const Bomb: React.FC<BombProps> = ({ x, y }) => {
+  return (
+    <Sprite
+      texture={PIXI.Texture.from(bomb)}
+      anchor={0.5}
+      x={x * GRID_STEP + 20}
+      y={y * GRID_STEP + 20}
+    />
   );
 };
 
@@ -61,6 +76,7 @@ const Main: React.FC<MainProps> = () => {
         channel.push("move", { direction: "left" });
       if (pressedKeys.has("ArrowRight"))
         channel.push("move", { direction: "right" });
+      if (pressedKeys.has(" ")) channel.push("bomb", {});
     });
 
     channel.on("moved", (payload) => {
@@ -74,10 +90,21 @@ const Main: React.FC<MainProps> = () => {
     channel.on("left", (payload) => {
       dispatch({ type: "left", payload });
     });
+
+    channel.on("explosion", (payload) => {
+      dispatch({ type: "explosion", payload });
+    });
+
+    channel.on("bomb", (payload) => {
+      dispatch({ type: "bomb", payload });
+    });
   }, [ticker]);
 
   return (
     <>
+      {state.bombs.map((bomb, i) => (
+        <Bomb key={i} x={bomb.x} y={bomb.y} />
+      ))}
       {state.players.map((user) => (
         <Bunny key={user.id} id={user.id} x={user.x} y={user.y} />
       ))}

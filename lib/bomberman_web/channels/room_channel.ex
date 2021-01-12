@@ -25,6 +25,18 @@ defmodule BombermanWeb.RoomChannel do
     {:noreply, socket}
   end
 
+  def handle_in("bomb", _message, socket) do
+    player = Room.get_player(socket.assigns.username)
+
+    Room.place_bomb(socket.assigns.username, fn _players ->
+      broadcast!(socket, "explosion", %{x: player.x, y: player.y})
+    end)
+
+    broadcast!(socket, "bomb", %{x: player.x, y: player.y})
+
+    {:noreply, socket}
+  end
+
   def handle_info(:after_join, socket) do
     player = Room.put_player(%Player{id: socket.assigns.username, x: 0, y: 0})
     broadcast!(socket, "joined", %{player: player})

@@ -31,8 +31,23 @@ export interface MoveAction extends Action {
     y: number;
   }
 }
+export interface ExplosionAction extends Action {
+  type: "explosion";
+  payload: {
+    x: number;
+    y: number;
+  }
+}
 
-export type AllActions = JoinAction | MoveAction | JoinedAction | LeftAction
+export interface BombAction extends Action {
+  type: "bomb";
+  payload: {
+    x: number;
+    y: number;
+  }
+}
+
+export type ReducerActions = JoinAction | MoveAction | JoinedAction | LeftAction | ExplosionAction | BombAction
 
 export interface Player {
   id: string;
@@ -40,17 +55,24 @@ export interface Player {
   y: number;
 }
 
+export interface Bomb {
+  x: number;
+  y: number;
+}
+
 export interface State {
   id: string | null;
   players: Player[]
+  bombs: Bomb[]
 }
 
 export const initialState: State = {
   id: null,
-  players: []
+  players: [],
+  bombs: []
 };
 
-export function reducer(state: State, action: AllActions): State {
+export function reducer(state: State, action: ReducerActions): State {
   switch (action.type) {
     case "join": {
       return {
@@ -80,6 +102,18 @@ export function reducer(state: State, action: AllActions): State {
       return {
         ...state,
         players: state.players.filter((p) => p.id !== player_id)
+      }}
+    case "explosion": {
+      const { x, y } = action.payload;
+      return {
+        ...state,
+        bombs: state.bombs.filter((b) => b.x !== x && b.y !== y)
+      }}
+    case "bomb": {
+      const { x, y } = action.payload;
+      return {
+        ...state,
+        bombs: [...state.bombs, { x, y }]
       }}
     default:
       return exhaustSwitchCase(action, state)

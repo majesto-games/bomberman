@@ -36,6 +36,7 @@ export interface ExplosionAction extends Action {
   payload: {
     x: number;
     y: number;
+    players_dead: Player[];
   }
 }
 
@@ -104,10 +105,11 @@ export function reducer(state: State, action: ReducerActions): State {
         players: state.players.filter((p) => p.id !== player_id)
       }}
     case "explosion": {
-      const { x, y } = action.payload;
+      const { x, y, players_dead } = action.payload;
       return {
         ...state,
-        bombs: state.bombs.filter((b) => b.x !== x && b.y !== y)
+        bombs: state.bombs.filter((b) => b.x !== x && b.y !== y),
+        players: state.players.filter((p) => !players_dead.some((p2) => p.id === p2.id))
       }}
     case "bomb": {
       const { x, y } = action.payload;

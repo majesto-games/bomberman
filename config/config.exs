@@ -16,6 +16,7 @@ config :bomberman, BombermanWeb.Endpoint,
   secret_key_base: "XqblE6XOAG22434//R1qae8upi2SouTs6C0atBwzb2aPxbm6PQ44CPI7srXHTSPL",
   render_errors: [view: BombermanWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Bomberman.PubSub,
+  check_origin: false,
   live_view: [signing_salt: "dFQjJVTA"]
 
 # Configures Elixir's Logger

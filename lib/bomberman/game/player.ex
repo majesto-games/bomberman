@@ -1,11 +1,12 @@
 defmodule Bomberman.Player do
+  alias Bomberman.Position
+
   @derive Jason.Encoder
   @type t :: %__MODULE__{
           id: String.t(),
-          x: integer(),
-          y: integer(),
+          position: Position.t(),
           direction: String.t() | nil
         }
-  @enforce_keys [:id, :x, :y]
-  defstruct [:id, :x, :y, direction: nil]
+  @enforce_keys [:id]
+  defstruct [:id, :position, direction: nil]
 end

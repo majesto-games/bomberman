@@ -1,48 +1,20 @@
-import * as PIXI from "pixi.js";
 import { render } from "react-dom";
-import { Sprite, Stage, Text, Container, usePixiApp } from "react-pixi-fiber";
+import { Stage, usePixiApp } from "react-pixi-fiber";
 import { Socket } from "phoenix";
-import { useEffect, useReducer } from "react";
-import { Bomb as IBomb, initialState, Player, reducer } from "./reducer";
+import React, { useEffect, useReducer } from "react";
+import { initialState, reducer } from "./reducer";
 import { keyboard } from "./keyboard";
 
-import bunny from "./bunny.png";
-import bomb from "./bomb.png";
-
 import "./index.css";
+import { BombComponent } from "./components/Bomb";
+import { PlayerComponent } from "./components/Player";
+import { BlockComponent } from "./components/Block";
 
 const socket = new Socket("ws://localhost:4000/socket");
 socket.connect();
 
-const GRID_STEP = 40;
-
-interface BunnyProps extends Player {}
-
-const Bunny: React.FC<BunnyProps> = ({ id, x, y }) => {
-  return (
-    <Container x={x * GRID_STEP + 20} y={y * GRID_STEP + 20}>
-      <Text
-        text={id}
-        style={{ fontSize: 14, align: "center", fill: "#fff" }}
-        anchor={[0.5, 3]}
-      />
-      <Sprite texture={PIXI.Texture.from(bunny)} anchor={0.5} />
-    </Container>
-  );
-};
-
-interface BombProps extends IBomb {}
-
-const Bomb: React.FC<BombProps> = ({ x, y }) => {
-  return (
-    <Sprite
-      texture={PIXI.Texture.from(bomb)}
-      anchor={0.5}
-      x={x * GRID_STEP + 20}
-      y={y * GRID_STEP + 20}
-    />
-  );
-};
+const WIDTH = 800;
+const HEIGHT = 800;
 
 const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "];
 const pressedKeys = keyboard(keys);
@@ -101,13 +73,46 @@ const Main: React.FC<MainProps> = () => {
     });
   }, [ticker]);
 
+  const mapHeight = state.map.blocks.length;
+  const mapWidth = mapHeight > 0 ? state.map.blocks[0].length : 0;
+
+  const xScale = WIDTH / mapWidth;
+  const yScale = HEIGHT / mapHeight;
+
+  const baseProps = {
+    xScale,
+    yScale,
+  };
+
   return (
     <>
-      {state.bombs.map((bomb, i) => (
-        <Bomb key={i} x={bomb.x} y={bomb.y} />
+      {Object.values(state.players).map((user) => (
+        <PlayerComponent
+          {...baseProps}
+          key={user.id}
+          id={user.id}
+          x={user.position.x * xScale}
+          y={user.position.y * yScale}
+        />
       ))}
-      {state.players.map((user) => (
-        <Bunny key={user.id} id={user.id} x={user.x} y={user.y} />
+      {state.map.blocks.map((row, y) =>
+        row.map((type, x) => (
+          <BlockComponent
+            key={`${x}${y}`}
+            {...baseProps}
+            x={x * xScale}
+            y={y * yScale}
+            type={type}
+          />
+        ))
+      )}
+      {state.bombs.map((bomb, i) => (
+        <BombComponent
+          {...baseProps}
+          key={i}
+          x={bomb.x * xScale}
+          y={bomb.y * yScale}
+        />
       ))}
     </>
   );
@@ -119,8 +124,8 @@ render(
     <Stage
       options={{
         backgroundColor: 0x00,
-        height: 800,
-        width: 800,
+        width: WIDTH,
+        height: HEIGHT,
       }}
     >
       <Main />

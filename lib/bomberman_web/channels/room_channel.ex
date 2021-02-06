@@ -1,18 +1,13 @@
 defmodule BombermanWeb.RoomChannel do
   use Phoenix.Channel, log_join: :info, log_handle_in: false
   alias Bomberman.Room
-  alias Bomberman.Player
 
   @topic "room:lobby"
 
   def join(@topic, _message, socket) do
     send(self(), :after_join)
 
-    {:ok,
-     %{
-       id: socket.assigns.username,
-       players: Room.get_players()
-     }, socket}
+    {:ok, %{id: socket.assigns.username, state: Room.get_state()}, socket}
   end
 
   def terminate(_reason, socket) do
@@ -34,7 +29,7 @@ defmodule BombermanWeb.RoomChannel do
   end
 
   def handle_info(:after_join, socket) do
-    player = Room.put_player(%Player{id: socket.assigns.username, x: 0, y: 0})
+    player = Room.put_player(socket.assigns.username)
     broadcast!(socket, "joined", %{player: player})
     {:noreply, socket}
   end

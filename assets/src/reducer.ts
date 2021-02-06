@@ -1,80 +1,19 @@
+import { ReducerActions } from "./actions";
+import { Player, Bomb } from "./types";
 import { exhaustSwitchCase } from "./utils";
-
-export interface Action {
-  type: string;
-  payload: any;
-}
-export interface JoinAction extends Action {
-  type: "join";
-  payload: {
-    id: string;
-    players: Player[];
-  };
-}
-export interface JoinedAction extends Action {
-  type: "joined";
-  payload: {
-    player: Player;
-  };
-}
-export interface LeftAction extends Action {
-  type: "left";
-  payload: {
-    player_id: string;
-  };
-}
-export interface TickAction extends Action {
-  type: "tick";
-  payload: {
-    players: Player[];
-  };
-}
-export interface ExplosionAction extends Action {
-  type: "explosion";
-  payload: {
-    x: number;
-    y: number;
-    players_dead: Player[];
-  };
-}
-
-export interface BombAction extends Action {
-  type: "bomb";
-  payload: {
-    x: number;
-    y: number;
-  };
-}
-
-export type ReducerActions =
-  | JoinAction
-  | TickAction
-  | JoinedAction
-  | LeftAction
-  | ExplosionAction
-  | BombAction;
-
-export interface Player {
-  id: string;
-  x: number;
-  y: number;
-}
-
-export interface Bomb {
-  x: number;
-  y: number;
-}
 
 export interface State {
   id: string | null;
-  players: Player[];
+  players: Record<string, Player>;
   bombs: Bomb[];
+  map: { blocks: number[][] };
 }
 
 export const initialState: State = {
   id: null,
-  players: [],
+  players: {},
   bombs: [],
+  map: { blocks: [] },
 };
 
 export function reducer(state: State, action: ReducerActions): State {
@@ -82,21 +21,23 @@ export function reducer(state: State, action: ReducerActions): State {
     case "join": {
       return {
         ...state,
-        ...action.payload,
+        id: action.payload.id,
+        ...action.payload.state,
       };
     }
     case "joined": {
       const { player } = action.payload;
       return {
         ...state,
-        players: [...state.players, player],
+        players: { ...state.players, [player.id]: player },
       };
     }
     case "left": {
       const { player_id } = action.payload;
+      const { [player_id]: removed_player, ...players } = state.players;
       return {
         ...state,
-        players: state.players.filter((p) => p.id !== player_id),
+        players,
       };
     }
     case "explosion": {
@@ -104,9 +45,9 @@ export function reducer(state: State, action: ReducerActions): State {
       return {
         ...state,
         bombs: state.bombs.filter((b) => b.x !== x && b.y !== y),
-        players: state.players.filter(
-          (p) => !players_dead.some((p2) => p.id === p2.id)
-        ),
+        // players: state.players.filter(
+        //   (p) => !players_dead.some((p2) => p.id === p2.id)
+        // ),
       };
     }
     case "bomb": {

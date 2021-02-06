@@ -59,7 +59,8 @@ config :bomberman, BombermanWeb.Endpoint,
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
       ~r"lib/bomberman_web/(live|views)/.*(ex)$",
-      ~r"lib/bomberman_web/templates/.*(eex)$"
+      ~r"lib/bomberman_web/templates/.*(eex)$",
+      ~r"lib/bomberman/game/.*(ex)$"
     ]
   ]
 

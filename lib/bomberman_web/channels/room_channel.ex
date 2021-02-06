@@ -1,9 +1,11 @@
 defmodule BombermanWeb.RoomChannel do
-  use Phoenix.Channel
+  use Phoenix.Channel, log_join: :info, log_handle_in: false
   alias Bomberman.Room
   alias Bomberman.Player
 
-  def join("room:lobby", _message, socket) do
+  @topic "room:lobby"
+
+  def join(@topic, _message, socket) do
     send(self(), :after_join)
 
     {:ok,
@@ -20,8 +22,7 @@ defmodule BombermanWeb.RoomChannel do
   end
 
   def handle_in("move", %{"direction" => direction}, socket) do
-    new_user = Room.move_player(socket.assigns.username, direction)
-    broadcast!(socket, "moved", new_user)
+    Room.change_direction(socket.assigns.username, direction)
     {:noreply, socket}
   end
 
@@ -43,7 +44,11 @@ defmodule BombermanWeb.RoomChannel do
     {:noreply, socket}
   end
 
-  def explode(pid, x, y, players_dead) do
-    send(pid, {:explode, x, y, players_dead})
+  def explode(x, y, players_dead) do
+    BombermanWeb.Endpoint.broadcast(@topic, "explosion", %{x: x, y: y, players_dead: players_dead})
+  end
+
+  def tick(players) do
+    BombermanWeb.Endpoint.broadcast(@topic, "tick", %{players: players})
   end
 end

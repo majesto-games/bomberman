@@ -4,6 +4,7 @@ defmodule Bomberman.Room do
   alias BombermanWeb.RoomChannel
 
   @grid_size 20
+  @tick_rate 40
 
   def start_link(default) when is_list(default) do
     GenServer.start_link(__MODULE__, default, name: __MODULE__)
@@ -34,21 +35,9 @@ defmodule Bomberman.Room do
     GenServer.call(__MODULE__, :get_players)
   end
 
-  @spec move_player(integer, String.t()) :: Player.t()
-  def move_player(player_id, direction) do
-    # TODO: Move most code to inside the GenServer
-    delta =
-      case direction do
-        "right" -> %{x: 1, y: 0}
-        "left" -> %{x: -1, y: 0}
-        "up" -> %{x: 0, y: -1}
-        "down" -> %{x: 0, y: 1}
-      end
-
-    player_id
-    |> get_player()
-    |> new_position(delta)
-    |> update_player()
+  @spec change_direction(integer, String.t()) :: any()
+  def change_direction(player_id, direction) do
+    GenServer.call(__MODULE__, {:change_direction, player_id, direction})
   end
 
   def place_bomb(player_id) do
@@ -56,6 +45,7 @@ defmodule Bomberman.Room do
   end
 
   def init(_arg) do
+    :timer.send_interval(div(1000, @tick_rate), :tick)
     {:ok, %{}}
   end
 
@@ -80,22 +70,62 @@ defmodule Bomberman.Room do
     {:reply, Map.values(state), state}
   end
 
-  def handle_call({:place_bomb, player_id}, {pid, _}, state) do
-    Map.get(state, player_id) |> start_bomb_timer(pid)
+  def handle_call({:change_direction, player_id, direction}, _from, state) do
+    player = %Player{
+      Map.get(state, player_id)
+      | direction: direction
+    }
+
+    {:reply, :ok, Map.put(state, player.id, player)}
+  end
+
+  def handle_call({:place_bomb, player_id}, _from, state) do
+    Map.get(state, player_id) |> start_bomb_timer
     {:reply, :ok, state}
   end
 
-  def handle_info({:explode, x, y, pid}, state) do
+  def handle_info({:explode, x, y}, state) do
     {players_dead, _players_alive} =
       state
       |> Map.values()
       |> Enum.split_with(fn player -> x == player.x && y == player.y end)
 
-    RoomChannel.explode(pid, x, y, players_dead)
+    RoomChannel.explode(x, y, players_dead)
 
     player_alive_ids = Enum.map(players_dead, fn p -> p.id end)
 
     {:noreply, Map.drop(state, player_alive_ids)}
+  end
+
+  def handle_info(:tick, state) do
+    new_state =
+      for {player_id, player} <- state,
+          into: %{},
+          do: {player_id, player |> move_player |> reset_player_direction}
+
+    RoomChannel.tick(Map.values(new_state))
+
+    {:noreply, new_state}
+  end
+
+  defp move_player(player) do
+    delta =
+      case player.direction do
+        "right" -> %{x: 1, y: 0}
+        "left" -> %{x: -1, y: 0}
+        "up" -> %{x: 0, y: -1}
+        "down" -> %{x: 0, y: 1}
+        nil -> %{x: 0, y: 0}
+      end
+
+    new_position(player, delta)
+  end
+
+  defp reset_player_direction(player) do
+    %Player{
+      player
+      | direction: nil
+    }
   end
 
   defp new_position(player, delta) do
@@ -106,8 +136,8 @@ defmodule Bomberman.Room do
     }
   end
 
-  defp start_bomb_timer(%Player{x: x, y: y}, pid) do
-    Process.send_after(self(), {:explode, x, y, pid}, 4000)
+  defp start_bomb_timer(%Player{x: x, y: y}) do
+    Process.send_after(self(), {:explode, x, y}, 4000)
   end
 
   defp bounded_increment(value) when value < 0, do: 0

@@ -44,7 +44,8 @@ const Bomb: React.FC<BombProps> = ({ x, y }) => {
   );
 };
 
-const pressedKeys = keyboard();
+const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "];
+const pressedKeys = keyboard(keys);
 
 interface MainProps {}
 
@@ -79,8 +80,8 @@ const Main: React.FC<MainProps> = () => {
       if (pressedKeys.has(" ")) channel.push("bomb", {});
     });
 
-    channel.on("moved", (payload) => {
-      dispatch({ type: "move", payload });
+    channel.on("tick", (payload) => {
+      dispatch({ type: "tick", payload });
     });
 
     channel.on("joined", (payload) => {
